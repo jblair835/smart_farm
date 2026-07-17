@@ -1,5 +1,4 @@
 # agents/reviewer_agent.py
-
 class ReviewerAgent:
     """
     Ivy reviews decisions for contradictions or missing logic.
@@ -8,15 +7,23 @@ class ReviewerAgent:
     def run(self, decisions):
         issues = []
 
-        # Check contradictions
-        if decisions["pesticide"]["should_spray"] and decisions["pesticide"]["timing"] is None:
+        # --- Safety: ensure decisions structure is valid ---
+        if not decisions or not isinstance(decisions, dict):
+            return {"issues": ["Decision data missing or invalid."]}
+
+        pesticide = decisions.get("pesticide", {})
+        fertilizer = decisions.get("fertilizer", {})
+
+        # --- Contradictions ---
+        if pesticide.get("should_spray") and not pesticide.get("timing"):
             issues.append("Pesticide spraying approved but no timing provided.")
 
-        if decisions["fertilizer"]["should_apply"] and decisions["fertilizer"]["timing"] is None:
+        if fertilizer.get("should_apply") and not fertilizer.get("timing"):
             issues.append("Fertilizer application approved but no timing provided.")
 
-        # Check risk alignment
-        if decisions["pesticide"]["should_spray"] and "wind" in decisions["pesticide"]["reason"].lower():
+        # --- Risk alignment ---
+        reason = pesticide.get("reason", "").lower()
+        if pesticide.get("should_spray") and "wind" in reason:
             issues.append("Pesticide spraying approved despite wind risk.")
 
         return {"issues": issues}
@@ -24,4 +31,7 @@ class ReviewerAgent:
     def speak(self, issues):
         if not issues:
             return "Inspector Ivy reporting — everything checks out."
-        return "Inspector Ivy reporting — issues detected:\n" + "\n".join(f"• {i}" for i in issues)
+
+        return "Inspector Ivy reporting — issues detected:\n" + "\n".join(
+            f"• {i}" for i in issues
+        )
