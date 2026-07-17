@@ -1,5 +1,3 @@
-# agents/weather_agent.py
-
 import requests
 
 class WeatherAgent:
@@ -16,6 +14,14 @@ class WeatherAgent:
                 "weather": override
             }
 
+        # Validate lat/lon
+        if lat is None or lon is None:
+            return {
+                "agent": "Weather Agent",
+                "error": "Latitude or longitude is missing."
+            }
+
+        # Build API request
         url = (
             "https://api.open-meteo.com/v1/forecast?"
             f"latitude={lat}&longitude={lon}"
@@ -23,13 +29,19 @@ class WeatherAgent:
             "&timezone=America/Los_Angeles"
         )
 
-        from agents.tools.open_meteo import get_weather   # adjust import to your structure
+        # Fetch weather
+        data = requests.get(url).json()
 
-        data = get_weather(lat, lon)
+        # SAFETY CHECK — prevent KeyError
         daily = data.get("daily")
         if daily is None:
-            raise ValueError(f"Weather API missing 'daily'. Full response: {data}")
+            return {
+                "agent": "Weather Agent",
+                "error": "Weather API did not return daily data.",
+                "raw_response": data
+            }
 
+        # Build 3‑day weather structure
         return {
             "agent": "Weather Agent",
             "weather": {

@@ -1,5 +1,3 @@
-# agents/tools/smartfarm_brain.py
-
 import re
 from agents.weather_agent import WeatherAgent
 from agents.crop_risk_agent import CropRiskAgent
@@ -22,10 +20,12 @@ class SmartFarmBrain:
     def parse_prompt(self, prompt: str):
         prompt = prompt.lower()
 
-        crops = ["tomatoes", "corn", "wheat", "alfalfa", "grapes", "cotton",
-                 "lettuce", "oranges", "strawberries", "peaches", "rice",
-                 "soybeans", "barley", "oats", "sorghum", "hay", "beans",
-                 "potatoes", "onions", "garlic"]
+        crops = [
+            "tomatoes", "corn", "wheat", "alfalfa", "grapes", "cotton",
+            "lettuce", "oranges", "strawberries", "peaches", "rice",
+            "soybeans", "barley", "oats", "sorghum", "hay", "beans",
+            "potatoes", "onions", "garlic"
+        ]
         crop = next((c.upper() for c in crops if c in prompt), "TOMATOES")
 
         stages = ["flowering", "vegetative", "fruiting", "harvest"]
@@ -97,15 +97,25 @@ class SmartFarmBrain:
         return int(m.group(1)) / 100 if m else None
 
     def ask(self, prompt: str, lat=None, lon=None):
-        # Lazy import — prevents circular dependency
         from agents.tools.smartfarm_router import SmartFarmRouter
         router = SmartFarmRouter()
 
         scenario = self.parse_prompt(prompt)
 
+        # Get weather safely
         weather = self.weather_agent.run(lat, lon, scenario["forecast_override"])
+
+        # If weather failed, stop early
+        if "error" in weather:
+            return (
+                f"Weather Agent Error: {weather['error']}\n"
+                f"Raw API Response: {weather.get('raw_response')}"
+            )
+
+        # Weather voice
         weather_voice = self.weather_agent.speak(weather["weather"])
 
+        # Continue pipeline
         risks = self.crop_risk_agent.run(weather["weather"], scenario)
         risk_voice = self.crop_risk_agent.speak(risks["risks"])
 
