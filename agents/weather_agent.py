@@ -23,8 +23,12 @@ class WeatherAgent:
             "&timezone=America/Los_Angeles"
         )
 
-        data = requests.get(url).json()
-        daily = data["daily"]
+        from agents.tools.open_meteo import get_weather   # adjust import to your structure
+
+        data = get_weather(lat, lon)
+        daily = data.get("daily")
+        if daily is None:
+            raise ValueError(f"Weather API missing 'daily'. Full response: {data}")
 
         return {
             "agent": "Weather Agent",

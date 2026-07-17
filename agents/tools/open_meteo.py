@@ -18,5 +18,6 @@ def get_weather(lat, lon):
         "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
         "timezone": "America/Los_Angeles"
     }
+    
     log(f"Fetching weather data for lat={lat}, lon={lon}")
     return safe_request(url, params)
